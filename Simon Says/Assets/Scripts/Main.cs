@@ -75,6 +75,7 @@ namespace Assets.Scripts
                 case GameState.UpdatePattern:
                     AddTileSequence();
                     _gameState = GameState.ShowingPattern;
+                    SetAllowTilesToBeClicked(false);
                     break;
                 case GameState.ShowingPattern:
                     _showPatternElapsed += Time.deltaTime;
