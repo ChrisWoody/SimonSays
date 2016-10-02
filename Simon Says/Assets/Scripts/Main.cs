@@ -2,14 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Assets.Scripts
 {
     public class Main : MonoBehaviour
     {
         public Tile[] Tiles;
+        public Canvas StartMenu;
+        public Canvas GameOverMenu;
+        public Text ScoreText;
+        public Text HighscoreText;
 
-        private GameState _gameState = GameState.UpdatePattern;
+        private GameState _gameState = GameState.ReadyToStartGame;
 
         private const float ShowPatternTimeout = 0.75f;
         private float _showPatternElapsed;
@@ -19,6 +24,8 @@ namespace Assets.Scripts
 
         private readonly System.Random _rand = new System.Random();
 
+        private int _highscore;
+
         void Start()
         {
             var index = 0;
@@ -26,12 +33,16 @@ namespace Assets.Scripts
             {
                 tile.Index = index++;
             }
+            GameOverMenu.enabled = false;
         }
 
         void Update()
         {
             switch (_gameState)
             {
+                case GameState.ReadyToStartGame:
+                    // do nothing, we are waiting for user to start the game
+                    break;
                 case GameState.UserPlaying:
                     if (_currentTileIndex + 1 > _tilePattern.Count)
                     {
@@ -51,8 +62,10 @@ namespace Assets.Scripts
                         }
                         else
                         {
+                            DumpState("player lost");
                             _gameState = GameState.PlayerLost;
-                            Debug.Log("GAME FAILED, score: " + _tilePattern.Count);
+                            SetAllowTilesToBeClicked(false);
+                            ShowGameOverMenu();
                         }
                     }
 
@@ -86,10 +99,28 @@ namespace Assets.Scripts
 
                     break;
                 case GameState.PlayerLost:
+                    // do nothing, we are waiting for user to start the game
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        private void ShowGameOverMenu()
+        {
+            var score = _tilePattern.Count - 1;
+            _highscore = Math.Max(score, _highscore);
+            ScoreText.text = "Score: " + score;
+            HighscoreText.text = "Highscore: " + _highscore;
+            GameOverMenu.enabled = true;
+        }
+
+        public void StartGame()
+        {
+            ResetGame();
+            StartMenu.enabled = false;
+            GameOverMenu.enabled = false;
+            _gameState = GameState.UpdatePattern;
         }
 
         private void AddTileSequence()
@@ -118,10 +149,20 @@ namespace Assets.Scripts
                 tile.ClearIsClicked();
             }
         }
+
+        private void ResetGame()
+        {
+            _showPatternElapsed = 0f;
+            _currentTileIndex = 0;
+            _tilePattern.Clear();
+            SetAllowTilesToBeClicked(false);
+            ClearTilesIsClicked();
+        }
     }
 
     public enum GameState
     {
+        ReadyToStartGame,
         UserPlaying,
         UpdatePattern,
         ShowingPattern,
